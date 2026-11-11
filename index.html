@@ -405,6 +405,9 @@ const LECTOR_DE_LINKS = 'https://r.jina.ai/';
 // Ejemplo: const URL_PARA_IMAGEN = 'horasdepega.netlify.app';
 const URL_PARA_IMAGEN = '';
 
+// Tu usuario de Instagram: aparece abajo en la imagen para historias ("Hecho por @...").
+const FIRMA_IMAGEN = '@marco.trends';
+
 // =====================================================================
 //  FRASES — una al azar según cuánto te cuesta. Agrega las que quieras.
 // =====================================================================
@@ -1004,13 +1007,26 @@ async function generarImagen(d) {
   x.textAlign = 'center';
   const eqY = qY + qH + 100;
   ajustar(x, d.eq1, `700 {t}px ${CU}`, 56, 34, 940);
-  x.fillStyle = c.texto; x.fillText(d.eq1, C, Math.min(eqY, 1790));
+  x.fillStyle = c.texto; x.fillText(d.eq1, C, Math.min(eqY, 1730));
+
+  // Firma: "Hecho por @marco.trends" (el usuario subrayado en amarillo)
+  if (FIRMA_IMAGEN) {
+    const p1 = 'Hecho por ', p2 = FIRMA_IMAGEN, fy = 1808;
+    x.font = `500 34px ${CU}`; const w1 = x.measureText(p1).width;
+    x.font = `700 34px ${CU}`; const w2 = x.measureText(p2).width;
+    const x0 = C - (w1 + w2) / 2;
+    x.fillStyle = css('--amarillo'); x.fillRect(x0 + w1 - 4, fy + 6, w2 + 8, 8);
+    x.textAlign = 'left';
+    x.font = `500 34px ${CU}`; x.fillStyle = c.texto2; x.fillText(p1, x0, fy);
+    x.font = `700 34px ${CU}`; x.fillStyle = c.texto; x.fillText(p2, x0 + w1, fy);
+    x.textAlign = 'center';
+  }
 
   // Pie con el nombre / URL de la app
   const url = urlApp();
   const pie = url ? `▶ JUEGA TÚ: ${url}` : '▶ ¿CUÁNTAS HORAS DE PEGA TE CUESTA?';
-  ajustar(x, pie, `400 {t}px ${HUD}`, 28, 18, 980);
-  x.fillStyle = c.texto2; x.fillText(pie, C, 1866);
+  ajustar(x, pie, `400 {t}px ${HUD}`, 26, 18, 980);
+  x.fillStyle = c.texto2; x.fillText(pie, C, 1874);
 
   return new Promise((ok, mal) => cv.toBlob(b => (b ? ok(b) : mal(new Error('sin imagen'))), 'image/png'));
 }
