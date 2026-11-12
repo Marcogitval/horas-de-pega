@@ -7,7 +7,7 @@
 <meta name="description" content="Pon lo que quieres comprar (o pega el link) y te digo cuántas horas de pega te cuesta de verdad.">
 <meta name="theme-color" content="#f3efe4" id="metaTema">
 <meta property="og:title" content="¿Cuántas horas de pega te cuesta?">
-<meta property="og:description" content="Tu compra es el jefe final: descubre cuántas horas de pega te cuesta 💀">
+<meta property="og:description" content="Descubre cuántas horas de pega te cuesta eso que quieres comprar 💀">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕹️</text></svg>">
 <script>
   // Antes de pintar la página: modo claro u oscuro según lo que eligió la persona, o según su celular/navegador
@@ -38,7 +38,7 @@
     --sombra:#211b3a;
     --amarillo:#ffc83d;     /* moneda: botón principal */
     --verde:#2fc48d;        /* vida: nivel fácil */
-    --rojo:#ff5a52;         /* peligro: jefe final */
+    --rojo:#ff5a52;         /* peligro: carísimo */
     --azul:#4c8dff;
     --rosa:#ff7eb6;
     --sobre-color:#211b3a;  /* texto encima de amarillo/verde/rojo */
@@ -157,7 +157,7 @@
   .link{display:block;margin:22px auto 0;background:none;border:0;color:var(--texto-2);font:600 14px var(--cuerpo);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:8px}
   .privacy{color:var(--texto-2);font-size:13px;text-align:center;margin-top:20px;line-height:1.45}
 
-  /* ===================== RESULTADO: PELEA CONTRA EL JEFE ===================== */
+  /* ===================== RESULTADO ===================== */
   .card{padding:18px 18px 20px;margin-bottom:24px;text-align:center}
   .hud{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px}
   .badge{font-family:var(--hud);font-size:11px;padding:5px 8px;color:var(--sobre-color);background:var(--nivel);white-space:nowrap}
@@ -221,7 +221,7 @@
 <main class="app">
   <header class="top">
     <div class="logo">¿Cuántas horas de pega te cuesta?</div>
-    <div class="paso px" id="paso">NIVEL 1/3</div>
+    <div class="paso px" id="paso">PASO 1/3</div>
     <button type="button" class="tema px" id="btnTema" aria-label="Cambiar a modo oscuro">🌙</button>
   </header>
 
@@ -265,12 +265,12 @@
       <p class="sub">Escríbelo tú o pega el link de la tienda.</p>
 
       <div class="seg px" id="modoCompra">
-        <button type="button" data-mc="manual" class="on">✍️ Lo escribo</button>
-        <button type="button" data-mc="link">🔗 Pego el link</button>
+        <button type="button" data-mc="link" class="on">🔗 Pego el link</button>
+        <button type="button" data-mc="manual">✍️ Lo escribo</button>
       </div>
 
       <!-- Opción A: escribir nombre y precio -->
-      <div id="bloqueManual">
+      <div id="bloqueManual" hidden>
         <label class="field">
           <span>¿Qué es?</span>
           <div class="input px"><input id="producto" class="url" type="text" maxlength="60" placeholder="zapatillas, iPhone, carrete…" autocomplete="off" enterkeyhint="next"></div>
@@ -288,7 +288,7 @@
       </div>
 
       <!-- Opción B: pegar el link -->
-      <div id="bloqueLink" hidden>
+      <div id="bloqueLink">
         <label class="field">
           <span>Link del producto</span>
           <div class="input px"><input id="link" class="url" type="url" inputmode="url" placeholder="https://www.falabella.com/…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go"></div>
@@ -300,9 +300,9 @@
       <p class="error px" id="err2" role="alert"></p>
       <div class="row">
         <button type="button" class="btn ghost" id="volver1" aria-label="Volver">◀</button>
-        <button type="submit" class="btn primary" id="btnCalcular">¡Pelear! ⚔️</button>
+        <button type="submit" class="btn primary" id="btnCalcular">Calcular 🔥</button>
       </div>
-      <p class="privacy" id="privLink" hidden>🔍 Para leer el precio le pasamos <b>solo el link</b> a lectores externos. Tu sueldo no sale de tu celu.</p>
+      <p class="privacy" id="privLink">🔍 Para leer el precio le pasamos <b>solo el link</b> a lectores externos. Tu sueldo no sale de tu celu.</p>
     </form>
   </section>
 
@@ -310,7 +310,7 @@
   <section class="screen" id="s3" aria-live="polite">
     <article class="card px harto" id="card">
       <div class="hud">
-        <span class="badge" id="rDificultad">Modo difícil</span>
+        <span class="badge" id="rDificultad">Piénsalo</span>
         <span class="hud-precio" id="rPrecio">$0</span>
       </div>
       <p class="r-prod" id="rProducto"></p>
@@ -331,7 +331,7 @@
 
     <div class="quest px" id="rTiempo"></div>
 
-    <p class="inv-title">Inventario</p>
+    <p class="inv-title">Equivale a…</p>
     <p class="inv-sub">Con esa misma plata te compras…</p>
     <div class="tiles" id="rEq"></div>
 
@@ -340,7 +340,7 @@
     <button type="button" class="btn ghost" id="btnOtra">🔁 Calcular otra cosa</button>
 
     <details class="desglose px">
-      <summary>📊 Ver estadísticas</summary>
+      <summary>📊 Ver el detalle</summary>
       <dl id="rDesglose"></dl>
     </details>
 
@@ -377,7 +377,7 @@ const EQUIVALENCIAS = [
 ];
 
 // =====================================================================
-//  ⏳ "MISIÓN SECUNDARIA: con esas mismas horas podrías…" — sale una al azar.
+//  ⏳ "DATO INÚTIL: con esas mismas horas podrías…" — sale una al azar.
 //  "minutos" es cuánto dura cada cosa. Agrega las que quieras.
 // =====================================================================
 const EQUIV_TIEMPO = [
@@ -388,7 +388,7 @@ const EQUIV_TIEMPO = [
   { emoji: '🎧', verbo: 'escuchar',     uno: 'vez tu canción favorita',         varios: 'veces tu canción favorita',        minutos: 3.5 },
   { emoji: '🥾', verbo: 'subir a pata', uno: 'vez el cerro San Cristóbal',      varios: 'veces el cerro San Cristóbal',     minutos: 60  },
   { emoji: '✈️', verbo: 'volar',        uno: 'vez de Santiago a Punta Arenas',  varios: 'veces de Santiago a Punta Arenas', minutos: 210 },
-  { emoji: '🎮', verbo: 'jugar',        uno: 'partida de 15 minutos',           varios: 'partidas de 15 minutos',           minutos: 15  },
+  { emoji: '🚶', verbo: 'dar',          uno: 'vuelta a la manzana',             varios: 'vueltas a la manzana',             minutos: 10  },
 ];
 
 // Otros ajustes
@@ -428,11 +428,11 @@ const FRASES = {
     'Respira hondo y vuelve a mirar el número 🫣',
   ],
 };
-// La "dificultad" que sale arriba del resultado según el nivel
+// La etiqueta de color que sale arriba del resultado según cuánto te cuesta
 const DIFICULTAD = {
-  poco: ['Modo fácil', 'Pan comido'],
-  harto: ['Modo difícil', 'Ojo ahí'],
-  demasiado: ['Jefe final', 'Modo pesadilla'],
+  poco: ['Barato', 'Dale nomás'],
+  harto: ['Piénsalo', 'Ojo ahí'],
+  demasiado: ['Carísimo', 'Alerta roja'],
 };
 const EMOJI_NIVEL = { poco: '😌', harto: '👀', demasiado: '💀' };
 const COLOR_NIVEL = { poco: '--verde', harto: '--amarillo', demasiado: '--rojo' };
@@ -441,7 +441,7 @@ const COLOR_NIVEL = { poco: '--verde', harto: '--amarillo', demasiado: '--rojo' 
 //  De aquí para abajo está la lógica de la app (no necesitas tocarla).
 // =====================================================================
 const $ = id => document.getElementById(id);
-const state = { sueldo: 0, horasSemana: HORAS_JORNADA_LEGAL, diasSemana: 5, modo: 'full', modoCompra: 'manual' };
+const state = { sueldo: 0, horasSemana: HORAS_JORNADA_LEGAL, diasSemana: 5, modo: 'full', modoCompra: 'link' }; // primero se ofrece pegar el link
 let ultimo = null;        // último resultado calculado
 let imagenPromesa = null; // imagen para historias (se prepara apenas sale el resultado)
 
@@ -491,7 +491,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 // ---------- Navegación ----------
 function irA(n) {
   document.querySelectorAll('.screen').forEach((s, i) => s.classList.toggle('active', i === n - 1));
-  $('paso').textContent = n === 3 ? '¡JEFE!' : `NIVEL ${n}/3`;
+  $('paso').textContent = n === 3 ? 'RESULTADO' : `PASO ${n}/3`;
   window.scrollTo(0, 0);
 }
 
@@ -578,7 +578,7 @@ $('volver1').addEventListener('click', () => irA(1));
 function cargando(si) {
   const b = $('btnCalcular');
   b.disabled = si; $('link').disabled = si;
-  b.innerHTML = si ? '<span class="spin"></span> Cargando…' : '¡Pelear! ⚔️';
+  b.innerHTML = si ? '<span class="spin"></span> Leyendo la tienda…' : 'Calcular 🔥';
 }
 
 $('f2').addEventListener('submit', async e => {
@@ -891,15 +891,15 @@ function mostrarResultado(d) {
     $('rFuente').hidden = true;
   }
 
-  // Misión secundaria
-  $('rTiempo').innerHTML = `<span class="tag">Misión secundaria</span><br>${tiempo.emoji} Con esas mismas horas podrías ${esc(tiempo.verbo)} <b>${tiempo.n} ${esc(tiempo.cosa)}</b>`;
+  // Dato inútil
+  $('rTiempo').innerHTML = `<span class="tag">Dato inútil</span><br>${tiempo.emoji} Con esas mismas horas podrías ${esc(tiempo.verbo)} <b>${tiempo.n} ${esc(tiempo.cosa)}</b>`;
 
-  // Inventario
+  // Equivalencias en plata
   $('rEq').innerHTML = eqs.map(e =>
     `<div class="tile px"><span class="e">${e.emoji}</span><b>×${fmtCant(e.cant)}</b>${esc(pl(e.cant, e.uno, e.varios))}</div>`
   ).join('');
 
-  // Estadísticas
+  // Detalle
   const filas = [
     ['Valor de tu hora', clp(d.valorHora)],
     ['Tu jornada', `${fmtNum(state.horasSemana, 1)} hrs × ${state.diasSemana} días`],
@@ -996,7 +996,7 @@ async function generarImagen(d) {
     x.fillText(t, align === 'left' ? izq : align === 'right' ? der : C, yy);
   });
 
-  // HUD: dificultad + precio
+  // Arriba: etiqueta de color + precio
   y += 60;
   x.font = `400 30px ${HUD}`;
   const dif = d.dificultad.toUpperCase(), difW = x.measureText(dif).width + 36;
@@ -1058,19 +1058,19 @@ async function generarImagen(d) {
   ops.forEach(op => op());
   x.restore();
 
-  // Misión secundaria
+  // Dato inútil
   let qY = cardY + cardH + 70;
   x.font = `700 36px ${CU}`;
   const ql = envolver(x, d.tiempoImg, bW - 80).slice(0, 2);
   const qH = 70 + ql.length * 48 + 28;
   cajaPx(x, bX, qY, bW, qH, c.quest, c.borde, c.sombra, 10);
-  x.font = `400 26px ${HUD}`; const tg = 'MISIÓN SECUNDARIA', tgW = x.measureText(tg).width + 28;
+  x.font = `400 26px ${HUD}`; const tg = 'DATO INÚTIL', tgW = x.measureText(tg).width + 28;
   x.fillStyle = c.texto; x.fillRect(bX + 30, qY + 24, tgW, 44);
   x.fillStyle = c.fondo; x.textAlign = 'left'; x.fillText(tg, bX + 44, qY + 55);
   x.fillStyle = c.texto; x.font = `700 36px ${CU}`;
   ql.forEach((l, i) => x.fillText(l, bX + 30, qY + 116 + i * 48));
 
-  // Inventario
+  // Equivalencia en completos
   x.textAlign = 'center';
   const eqY = qY + qH + 100;
   ajustar(x, d.eq1, `700 {t}px ${CU}`, 56, 34, 940);
@@ -1091,7 +1091,7 @@ async function generarImagen(d) {
 
   // Pie con el nombre / URL de la app
   const url = urlApp();
-  const pie = url ? `▶ JUEGA TÚ: ${url}` : '▶ ¿CUÁNTAS HORAS DE PEGA TE CUESTA?';
+  const pie = url ? `▶ CALCULA EL TUYO: ${url}` : '▶ ¿CUÁNTAS HORAS DE PEGA TE CUESTA?';
   ajustar(x, pie, `400 {t}px ${HUD}`, 26, 18, 980);
   x.fillStyle = c.texto2; x.fillText(pie, C, 1874);
 
@@ -1134,9 +1134,9 @@ $('btnShare').addEventListener('click', async () => {
 // ---------- Calcular otra cosa (mantiene tu sueldo) ----------
 $('btnOtra').addEventListener('click', () => {
   ['producto', 'precio', 'link'].forEach(id => ($(id).value = ''));
-  limpiarErrores($('f2'), true);
+  ponerModoCompra('link'); // siempre volvemos a ofrecer primero el link
   irA(2);
-  setTimeout(() => $(state.modoCompra === 'link' ? 'link' : 'producto').focus(), 50);
+  setTimeout(() => $('link').focus(), 50);
 });
 $('btnSueldo').addEventListener('click', () => irA(1));
 
