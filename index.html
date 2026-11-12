@@ -349,8 +349,7 @@
 
   <!-- ✏️ Firma: cambia aquí tu usuario o el link de Instagram -->
   <footer class="firma">
-    Hecho por <a href="https://www.instagram.com/marco.trends/" target="_blank" rel="noopener">@marco.trends</a><br>
-    <a href="https://www.instagram.com/marco.trends/" target="_blank" rel="noopener">Sígueme en Instagram ↗</a>
+    Hecho por <a href="https://www.instagram.com/marco.trends/" target="_blank" rel="noopener">@marco.trends</a>
   </footer>
 </main>
 
@@ -389,6 +388,15 @@ const EQUIV_TIEMPO = [
   { emoji: '🥾', verbo: 'subir a pata', uno: 'vez el cerro San Cristóbal',      varios: 'veces el cerro San Cristóbal',     minutos: 60  },
   { emoji: '✈️', verbo: 'volar',        uno: 'vez de Santiago a Punta Arenas',  varios: 'veces de Santiago a Punta Arenas', minutos: 210 },
   { emoji: '🚶', verbo: 'dar',          uno: 'vuelta a la manzana',             varios: 'vueltas a la manzana',             minutos: 10  },
+  { emoji: '🎤', verbo: 'ver',      uno: 'noche completa del Festival de Viña, hasta que suelten la gaviota',      varios: 'noches completas del Festival de Viña, hasta que suelten la gaviota',      minutos: 300  },
+  { emoji: '🇨🇱', verbo: 'hacer',    uno: 'viaje en bus de Santiago a Arica (sí, Chile es así de largo)',           varios: 'viajes en bus de Santiago a Arica (sí, Chile es así de largo)',           minutos: 1680 },
+  { emoji: '⚽', verbo: 'ver',      uno: 'vez la final de la Copa América 2015, penal de Alexis incluido',         varios: 'veces la final de la Copa América 2015, penal de Alexis incluido',        minutos: 165  },
+  { emoji: '🚗', verbo: 'quedar',   uno: 'vez atrapado en el taco de la Ruta 68 un fin de semana largo',           varios: 'veces atrapado en el taco de la Ruta 68 un fin de semana largo',          minutos: 180  },
+  { emoji: '🚌', verbo: 'esperar',  uno: 'vez la micro que no para',                                               varios: 'veces la micro que no para',                                              minutos: 20   },
+  { emoji: '☕', verbo: 'tomar',    uno: 'once con marraqueta y palta',                                            varios: 'onces con marraqueta y palta',                                            minutos: 45   },
+  { emoji: '🔥', verbo: 'hacer',    uno: 'asado de domingo, desde prender el carbón hasta la sobremesa',           varios: 'asados de domingo, desde prender el carbón hasta la sobremesa',           minutos: 300  },
+  { emoji: '🎧', verbo: 'escuchar', uno: 'vez «Tren al sur» de Los Prisioneros',                                   varios: 'veces «Tren al sur» de Los Prisioneros',                                  minutos: 5    },
+  { emoji: '🚌', verbo: 'hacer',    uno: 'viaje en bus de Santiago a Puerto Montt',                                varios: 'viajes en bus de Santiago a Puerto Montt',                                minutos: 720  },
 ];
 
 // Otros ajustes
@@ -413,12 +421,22 @@ const FRASES = {
     'Ni alcanzas a llegar a la colación y ya está pagado 🍽️',
     'Barato, barato. Tu yo del futuro ni se va a enterar ✨',
     'Eso es un gustito, no un drama. Te lo mereces 💅',
+    'Lo pagas antes de la hora de once ☕',
+    'Para eso trabajas, cómpralo 😎',
+    'Esto no te deja pato. Dale nomás 🦆',
+    'Menos de un día de pega: ni pa\' llorar en la micro de vuelta 🚌',
+    'Gustito aprobado. El bolsillo ni lo siente 💸',
   ],
   harto: [
     'Ojo, que eso ya es harta pega. ¿Lo vale? 👀',
     'Varios días sacándote la mugre por esto. Piénsalo con calma 🤔',
     'No es tanto, pero tampoco es poco. Duérmelo una noche 🛌',
     'Hartas horas mirando el reloj para pagar esto ⏰',
+    'Ojo, que con esto llegai justito a fin de mes 😬',
+    'Vas a tener que apretar cachete hasta la quincena 🤏',
+    'Varios días de pega… ¿lo necesitai o es puro antojo? 🤔',
+    'Piénsalo con una once de por medio y decides mañana ☕',
+    'No es pa\' tanto, pero tampoco pa\' tirar la casa por la ventana 🏠',
   ],
   demasiado: [
     'Más de una semana entera de pega. Tu jefe feliz, tu cuenta no tanto 💀',
@@ -426,6 +444,11 @@ const FRASES = {
     'Vas a trabajar semanas solo para esto. ¿Seguro, seguro? 🫠',
     'Ni con todas las horas extra del mundo, amix 😵‍💫',
     'Respira hondo y vuelve a mirar el número 🫣',
+    'Ta\' mal pelao\' el chancho: esto es más de una semana de pega 🐷',
+    'Con esto la cuenta de marzo te llega adelantada 📉',
+    'Vas a quedar pato hasta el próximo 18 🦆',
+    'Ni con el aguinaldo de Fiestas Patrias te salvai 🇨🇱',
+    '¿Lo necesitas realmente, amix? D: 🦅',
   ],
 };
 // La etiqueta de color que sale arriba del resultado según cuánto te cuesta
@@ -1051,30 +1074,37 @@ async function generarImagen(d) {
   y += dH + 50;
   const cardH = y;
 
+  // Medimos el dato inútil antes de dibujar, para saber cuánto espacio queda abajo
+  x.font = `700 34px ${CU}`;
+  const ql = envolver(x, d.tiempoImg, bW - 70).slice(0, 3);
+  const qH = 70 + ql.length * 46 + 28;
+  const LIMITE_EQ = 1740; // la línea de los completos no puede bajar de aquí (abajo va la firma)
+  const sobra = (250 + cardH + 70 + qH + 100) - LIMITE_EQ;
+  const subir = Math.max(0, Math.min(sobra, 60)); // si falta espacio, subimos todo un poco
+  const mostrarEq = sobra - subir <= 0;            // y si aun así no cabe, omitimos esa línea
+
   // ---- Dibujamos la tarjeta y su contenido ----
-  const cardY = 250;
+  const cardY = 250 - subir;
   x.save(); x.translate(0, cardY);
   cajaPx(x, bX, 0, bW, cardH, c.caja, c.borde, c.sombra, 10);
   ops.forEach(op => op());
   x.restore();
 
   // Dato inútil
-  let qY = cardY + cardH + 70;
-  x.font = `700 36px ${CU}`;
-  const ql = envolver(x, d.tiempoImg, bW - 80).slice(0, 2);
-  const qH = 70 + ql.length * 48 + 28;
+  const qY = cardY + cardH + 70;
   cajaPx(x, bX, qY, bW, qH, c.quest, c.borde, c.sombra, 10);
   x.font = `400 26px ${HUD}`; const tg = 'DATO INÚTIL', tgW = x.measureText(tg).width + 28;
   x.fillStyle = c.texto; x.fillRect(bX + 30, qY + 24, tgW, 44);
   x.fillStyle = c.fondo; x.textAlign = 'left'; x.fillText(tg, bX + 44, qY + 55);
-  x.fillStyle = c.texto; x.font = `700 36px ${CU}`;
-  ql.forEach((l, i) => x.fillText(l, bX + 30, qY + 116 + i * 48));
+  x.fillStyle = c.texto; x.font = `700 34px ${CU}`;
+  ql.forEach((l, i) => x.fillText(l, bX + 30, qY + 114 + i * 46));
 
   // Equivalencia en completos
   x.textAlign = 'center';
-  const eqY = qY + qH + 100;
-  ajustar(x, d.eq1, `700 {t}px ${CU}`, 56, 34, 940);
-  x.fillStyle = c.texto; x.fillText(d.eq1, C, Math.min(eqY, 1730));
+  if (mostrarEq) {
+    ajustar(x, d.eq1, `700 {t}px ${CU}`, 56, 34, 940);
+    x.fillStyle = c.texto; x.fillText(d.eq1, C, qY + qH + 100);
+  }
 
   // Firma: "Hecho por @marco.trends" (el usuario subrayado en amarillo)
   if (FIRMA_IMAGEN) {
