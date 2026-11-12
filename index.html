@@ -302,7 +302,7 @@
         <button type="button" class="btn ghost" id="volver1" aria-label="Volver">◀</button>
         <button type="submit" class="btn primary" id="btnCalcular">¡Pelear! ⚔️</button>
       </div>
-      <p class="privacy" id="privLink" hidden>🔍 Para leer el precio le pasamos <b>solo el link</b> a un lector externo. Tu sueldo no sale de tu celu.</p>
+      <p class="privacy" id="privLink" hidden>🔍 Para leer el precio le pasamos <b>solo el link</b> a lectores externos. Tu sueldo no sale de tu celu.</p>
     </form>
   </section>
 
@@ -395,10 +395,6 @@ const EQUIV_TIEMPO = [
 const HORAS_JORNADA_LEGAL = 42;   // Jornada legal vigente en Chile (baja a 40 en abril de 2028)
 const SEMANAS_POR_MES     = 4.33; // Semanas promedio que tiene un mes
 const VALOR_DOLAR         = 950;  // Por si una tienda muestra el precio en dólares (US$). Actualízalo.
-
-// Servicio externo que lee la página de la tienda (gratis, no necesita cuenta).
-// Solo recibe el link del producto, nunca el sueldo.
-const LECTOR_DE_LINKS = 'https://r.jina.ai/';
 
 // Texto que aparece abajo en la imagen para historias.
 // Si lo dejas vacío (''), se usa automáticamente la dirección donde publiques la app.
@@ -624,7 +620,10 @@ $('f2').addEventListener('submit', async e => {
   ponerModoCompra('manual');
   $('producto').value = nombre;
   $('precio').value = '';
-  aviso('nota2', `${host} no nos quiso mostrar el precio 🙄 ${nombre ? 'Ya pusimos el nombre, ' : ''}ponle tú el precio y listo.`);
+  const motivo = /mercadoli[bv]re|meli\.la/i.test(host)
+    ? 'MercadoLibre pide iniciar sesión para mostrar sus precios, así que no nos deja leerlos 🙄'
+    : `${host} no nos quiso mostrar el precio 🙄`;
+  aviso('nota2', `${motivo} ${nombre ? 'Ya pusimos el nombre, ' : ''}ponle tú el precio y listo.`);
   (nombre ? $('precio') : $('producto')).focus();
 });
 
@@ -681,46 +680,114 @@ function metaTag(html, nombre) {
   return tag ? (tag.match(/content=["']([^"']*)["']/i) || [])[1] || null : null;
 }
 
-function extraerProducto(html) {
+// Señales de que la tienda mostró una página de bloqueo o de error en vez del producto
+const ES_BLOQUEO = /just a moment|access denied|acceso denegado|error en |could not be satisfied|attention required|verifica|robot|captcha|blocked|forbidden|^\s*mercado libre\s*$|converted content|security check|not found|no encontrad|\b40[34]\b/i;
+// Palabras que, justo antes de un "$", indican que ese monto NO es el precio del producto
+const NO_ES_PRECIO = /(cuotas?( de)?|env[ií]o|despacho|ahorr\w*|descuento( de)?|cup[oó]n|desde|hasta|sobre|pagar de|puntos|cashback|gift ?card|m[ií]nim\w*)\s*:?\s*$/i;
+
+function limpiarNombre(s) {
+  if (!s) return null;
+  s = decodificar(String(s)).split(/\s[|–—]\s/)[0]              // "Zapatilla X | Paris.cl" → "Zapatilla X"
+    .replace(/\s-\s[^-]*\.(cl|com)\b.*$/i, '').replace(/\s+/g, ' ').trim();
+  return s && !ES_BLOQUEO.test(s) ? s : null;
+}
+
+// Camino 1 (el más exacto): datos estructurados que las tiendas ponen en su página para Google
+function deDatosEstructurados(html) {
   let nombre = null, precio = 0, moneda = 'CLP';
-  // 1) Datos estructurados (JSON-LD) que las tiendas ponen para Google
   for (const m of html.matchAll(/<script[^>]*application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) {
     let data; try { data = JSON.parse(m[1].trim()); } catch (e) { continue; }
     const p = buscarProducto(data);
     if (!p) continue;
     const ofertas = [].concat(p.offers || []).flatMap(o => (o && o.offers ? [].concat(o.offers) : [o]));
-    const precios = ofertas.map(o => ({ v: aNumero(o && (o.price ?? o.lowPrice)), c: o && o.priceCurrency })).filter(x => x.v > 0);
+    const precios = ofertas.map(o => ({
+      v: aNumero(o && (o.price ?? o.lowPrice ?? (o.priceSpecification && [].concat(o.priceSpecification)[0]?.price))),
+      c: o && o.priceCurrency,
+    })).filter(x => x.v > 0);
     if (precios.length) {
       precios.sort((a, b) => a.v - b.v); // si hay varios (oferta, normal, con tarjeta), usamos el más bajo
       precio = precios[0].v; moneda = precios[0].c || 'CLP';
-      nombre = p.name ? decodificar(String(p.name)) : null;
+      nombre = p.name || null;
       break;
     }
   }
-  // 2) Etiquetas meta de precio
-  if (!precio) {
+  if (!precio) { // etiquetas meta de precio
     precio = aNumero(metaTag(html, 'product:price:amount') || metaTag(html, 'og:price:amount') || metaTag(html, 'price'));
     moneda = metaTag(html, 'product:price:currency') || metaTag(html, 'og:price:currency') || metaTag(html, 'priceCurrency') || 'CLP';
   }
-  if (!precio) return { nombre: null, precio: 0 }; // sin precio no confiamos en el título (puede ser una página de error)
-  if (!nombre) {
-    const t = metaTag(html, 'og:title') || (html.match(/<title[^>]*>([^<]*)/i) || [])[1] || '';
-    nombre = decodificar(t).split(/\s[|–—-]\s/)[0].trim() || null;
-  }
+  if (!precio) return null; // sin precio no confiamos en el título (puede ser una página de error)
+  if (!nombre) nombre = metaTag(html, 'og:title') || (html.match(/<title[^>]*>([^<]*)/i) || [])[1];
   if (/^US/i.test(moneda) || /USD/i.test(moneda)) precio = precio * VALOR_DOLAR;
-  return { nombre, precio: Math.round(precio) };
+  return { nombre: limpiarNombre(nombre), precio: Math.round(precio) };
 }
 
-async function leerLink(url) {
+// Camino 2 (respaldo): buscar el precio en el texto visible de la página
+function deTextoVisible(texto) {
+  const titulo = (texto.match(/^(?:Title|title):\s*"?(.+?)"?\s*$/m) || [])[1] || (texto.match(/^#\s+(.+)$/m) || [])[1] || '';
+  if (titulo && ES_BLOQUEO.test(titulo)) return null;
+  const iH1 = texto.search(/^#\s+\S/m); // partimos desde el título principal, si existe
+  const cuerpo = iH1 >= 0 ? texto.slice(iH1) : texto.replace(/^---[\s\S]*?\n---/, '');
+  const re = /(?:\$|CLP)\s?(\d{1,3}(?:\.\d{3})+)(?![\d.])/g;
+  const candidatos = []; let m;
+  while ((m = re.exec(cuerpo)) && candidatos.length < 12) {
+    if (NO_ES_PRECIO.test(cuerpo.slice(Math.max(0, m.index - 30), m.index))) continue; // "6 cuotas de $…", "ahorra $…"
+    candidatos.push({ v: aNumero(m[1]), i: m.index });
+  }
+  if (!candidatos.length) return null;
+  // Los precios pegados al primero son del mismo producto (normal / oferta / con tarjeta): usamos el más bajo
+  const grupo = candidatos.filter(c => c.i - candidatos[0].i <= 250).map(c => c.v);
+  return { nombre: limpiarNombre(titulo), precio: Math.min(...grupo) };
+}
+
+function extraerProducto(cuerpo) {
+  const esHtml = /<html|<script|<meta/i.test(cuerpo.slice(0, 5000)) || /<\/script>/i.test(cuerpo);
+  return esHtml ? deDatosEstructurados(cuerpo) : deTextoVisible(cuerpo);
+}
+
+// ---------- Los lectores: servicios que abren la página de la tienda por nosotros ----------
+// Solo reciben el link del producto, nunca el sueldo. Si uno falla, probamos con el siguiente.
+async function pedir(url, opciones, ms = 25000) {
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 30000);
+  const t = setTimeout(() => ctrl.abort(), ms);
   try {
-    const r = await fetch(LECTOR_DE_LINKS + url, { headers: { 'X-Return-Format': 'html' }, signal: ctrl.signal });
+    const r = await fetch(url, { ...opciones, signal: ctrl.signal });
     if (!r.ok) throw new Error('HTTP ' + r.status);
-    return extraerProducto(await r.text());
+    return await r.text();
   } finally {
     clearTimeout(t);
   }
+}
+const LECTORES = {
+  // 1) Jina Reader: trae la página completa, con los datos estructurados (lo más exacto)
+  jina: url => pedir('https://r.jina.ai/' + url, { headers: { 'X-Return-Format': 'html' } }),
+  // 2) Defuddle: trae el texto visible. Lee algunas tiendas que el primero no puede (ej: Easy)
+  defuddle: url => pedir('https://defuddle.md/' + url.replace(/^https?:\/\//, ''), {}),
+  // 3) Lector propio (archivo netlify/functions/leer.mjs): solo existe cuando la app está publicada
+  //    en Netlify desde GitHub. Lee tiendas que bloquean a los otros dos (ej: Ripley)
+  propio: url => pedir('/api/leer?url=' + encodeURIComponent(url), {}),
+};
+
+const esperar = ms => new Promise(r => setTimeout(r, ms));
+function primeraConPrecio(promesas) { // la primera que traiga precio; null si ninguna lo logra
+  return new Promise(resolver => {
+    let faltan = promesas.length;
+    if (!faltan) resolver(null);
+    promesas.forEach(p => p.then(r => { if (r) resolver(r); else if (--faltan === 0) resolver(null); }));
+  });
+}
+
+async function leerLink(url) {
+  const intentar = nombre => LECTORES[nombre](url).then(extraerProducto)
+    .then(r => (r && r.precio > 0 ? r : null)).catch(() => null);
+  // Partimos todos al mismo tiempo para no hacer esperar
+  const exacto = intentar('jina');
+  const respaldos = [intentar('defuddle')];
+  if (location.protocol.startsWith('http')) respaldos.push(intentar('propio'));
+  // Preferimos el dato exacto; si no llega (o se demora mucho), usamos el primer respaldo que tenga precio
+  return (await Promise.race([exacto, esperar(9000).then(() => null)]))
+      || (await primeraConPrecio(respaldos))
+      || (await exacto)
+      || { nombre: null, precio: 0 };
 }
 
 // ================= CÁLCULOS =================
